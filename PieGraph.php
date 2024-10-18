@@ -451,7 +451,7 @@ class PieGraph extends Graph {
       $ry = $this->slice_info[$index]->radius_y;
 
       // place it at the label_position distance from centre
-      $pos_radius = $this->getOption('label_position');
+      $pos_radius = $this->fixPosRadiusForSmallSlices($this->getOption('label_position'), $index);
       $reverse = $this->getOption('reverse');
       $ac = $this->s_angle + $a;
       $xc = $pos_radius * $rx * cos($ac);
@@ -472,6 +472,28 @@ class PieGraph extends Graph {
       $target = [$x, $y];
     }
     return [$pos, $target];
+  }
+
+  private function fixPosRadiusForSmallSlices($pos_radius, $index)
+  {
+    $pos_radius_delta = $this->getOption('label_position_delta_for_small_slices');
+    if ($pos_radius_delta) {
+      $min = 10;
+      $minForNeighbour = 20;
+      $keys = array_keys($this->slice_info);
+      $cur = array_search($index,$keys);
+      $cnt = count($keys);
+      $deg = $this->slice_info[$index]->degrees();
+      if ($deg < $minForNeighbour) {
+        if ($deg < $min ||
+            $this->slice_info[$keys[($cur - 1 + $cnt) % $cnt]]->degrees() < $min ||
+            $this->slice_info[$keys[($cur + 1) % $cnt]]->degrees() < $min
+        ) {
+          return $pos_radius + ($index % 2 ? $pos_radius_delta : -$pos_radius_delta);
+        }
+      }
+    }
+    return $pos_radius;
   }
 
   /**
