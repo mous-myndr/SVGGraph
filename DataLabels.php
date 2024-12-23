@@ -44,6 +44,8 @@ class DataLabels {
   private $same_size;
   private $callback;
 
+  private $toLeft = [];
+
   /**
    * Details of each label type
    */
@@ -500,6 +502,7 @@ class DataLabels {
         $style['target'] = $target;
       }
     }
+	$pos = $this->fixSmallValue($pos, $gobject['item'], $dataset, $index);
 
     // convert position string to an actual location
     list($x, $y, $anchor, $hpos, $vpos) = Graph::relativePosition($pos,
@@ -649,6 +652,18 @@ class DataLabels {
     return $label_markup;
   }
 
+  private function fixSmallValue($pos, $item, $dataset, $index)
+  {
+	  if ($item->value > 20) return $pos;
+
+	  for ($prev = $dataset - 1;($l = $this->getLabel($prev, $index)) && $l['item']->value === 0; $prev--);
+	  if (!$l || $l['item']->value > 20) {
+		  for ($next = $dataset + 1; ($l = $this->getLabel($next, $index)) && $l['item']->value === 0; $next++);
+		  if (!$l || $l['item']->value > 20) return $pos;
+	  }
+	  $this->toLeft[$index] = empty($this->toLeft[$index]);
+	  return $pos . ($this->toLeft[$index] ? ' left' : ' right');
+  }
   /**
    * Returns the mapping between style members and option names
    */
